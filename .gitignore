@@ -125,3 +125,4 @@ dmypy.json
 .pyre/
 .idea/
 .idea/workspace.xml
+.DS_Store
