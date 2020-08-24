@@ -2,6 +2,11 @@ import requests
 import pickle
 
 
+class MessageTypes:
+    SYSTEM = 'SYSTEM'
+    ERROR = 'ERROR'
+
+
 def save_session(session_file_path: str, session: requests.session) -> bool:
     try:
         with open(session_file_path, 'wb') as f:
@@ -19,3 +24,7 @@ def load_session(session_file_path: str) -> requests.Session:
         return session
     except IOError:
         return session
+
+
+def print_message(message_type: MessageTypes, message: str):
+    print(f'{message_type}: {message}')

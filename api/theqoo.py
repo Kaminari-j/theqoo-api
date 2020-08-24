@@ -2,13 +2,15 @@
 from bs4 import BeautifulSoup as bs
 import requests
 import ini
+from api import util
+from api.util import MessageTypes
 
 INIT_URL = 'https://theqoo.net/index.php'
 
 
 class Theqoo:
     # Session
-    session = None
+    session = requests.session()
     # User
     __theqoo_id = ''
     __theqoo_pw = ''
@@ -17,24 +19,45 @@ class Theqoo:
     # Etc
     __index_page_id = 'cate_index'
 
-    def __init__(self, user_id, user_pw):
-        self.session = requests.session()
+    def __init__(self, user_id, user_pw, session_file_path: str = None, no_directly_login: bool = None):
+        # Set Properties
+        self.__set_theqoo_id(user_id)
+        self.__set_theqoo_pw(user_pw)
+        # When Parameter Not Passed
+        if session_file_path is None:
+            session_file_path = ini.SESSION_FILE_NAME
+
+        if no_directly_login:
+            pass
+        else:
+            # Get Former Session
+            former_session = self.get_former_session(session_file_path)
+            # Check Former Session Alive
+            if former_session is not None:
+                # When Can Be Used
+                self.session = former_session
+                self.__logged_in = True
+            else:
+                # When Unable To Use Former Session
+                try:
+                    self.do_login(session_file_name=session_file_path)
+                except ConnectionError as e:
+                    util.print_message(message_type=MessageTypes.ERROR,
+                                       message=f'다음과 같은 이유로 로그인에 실패하였습니다. {e.strerror}')
+        # Set Headers To Session
         self.session.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko',
             'Host': 'theqoo.net'
         }
 
-        self.__set_theqoo_id(user_id)
-        self.__set_theqoo_pw(user_pw)
-
     def __set_theqoo_id(self, theqoo_id):
-        if theqoo_id is None or theqoo_id.strip() == '' or theqoo_id == 'YOUR THEQOO ID':
+        if theqoo_id is None or theqoo_id.strip() == '' or theqoo_id == 'THEQOO ID':
             raise ValueError('THEQOO_ID 가 설정되지 않았습니다')
         else:
             self.__theqoo_id = theqoo_id
 
     def __set_theqoo_pw(self, theqoo_pw):
-        if theqoo_pw is None or theqoo_pw.strip() == '' or theqoo_pw == 'YOUR THEQOO ID':
+        if theqoo_pw is None or theqoo_pw.strip() == '' or theqoo_pw == 'THEQOO ID':
             raise ValueError('THEQOO_PW 가 설정되지 않았습니다')
         else:
             self.__theqoo_pw = theqoo_pw
@@ -51,7 +74,28 @@ class Theqoo:
     def get_theqoo_pw(self):
         return self.__theqoo_pw
 
-    def login(self):
+    @staticmethod
+    def get_former_session(session_file_name: str):
+        # Get Session From File
+        s = util.load_session(session_file_name)
+        # When Got No Session
+        if s is None:
+            return None
+        # Check Session With Make A Test Request To Open My Page
+        url = f'{INIT_URL}?act=dispMemberInfo'
+        # Make Request
+        res = s.get(url)
+        find_result = len(bs(res.text, features="html.parser").findAll('div', {'class', 'login-header'}))
+        # When Logged On Successfully, Length Of find_result Should Be 0
+        if find_result != 0:
+            return None
+        else:
+            return s
+
+    def do_login(self, session_file_name: str):
+        if self.is_logged_in():
+            return
+
         url = f'{INIT_URL}?mid=cate_index&act=dispMemberLoginForm'
         data = {
             'error_return_url': '/index.php?mid=cate_index&act=dispMemberLoginForm',
@@ -60,21 +104,27 @@ class Theqoo:
             'xe_validator_id': 'modules/member/skins/sketchbook5_member_skin/1',
             'user_id': self.__theqoo_id,
             'password': self.__theqoo_pw,
-            'keep_signed': 'N'
+            'keep_signed': 'Y'
         }
 
         login_res = self.session.post(url, data=data)
         response_bs = bs(login_res.text, features="html.parser")
         login_error = response_bs.find('div', {'class', 'message error'})
 
+        # Store Session To File
+        util.save_session(session_file_name, self.session)
+
         # Check StatusCode
         if login_res.status_code != 200:
             raise ConnectionError(f'Failed To Login (Status Code: {login_res.status_code})')
         # Check Login Error
         elif login_error is not None:
-            raise ConnectionError(f'Failed To Login: {login_error.text}')
+            raise ConnectionError(login_error.text)
+        # Login Success
         else:
             self.__logged_in = True
+            util.print_message(message_type=MessageTypes.SYSTEM,
+                               message='정상적으로 로그인 되었습니다.')
 
     def delete_comment(self, comment_srl):
         xml_payload = f'<?xml version="1.0" encoding="utf-8" ?>' \
@@ -88,14 +138,14 @@ class Theqoo:
                       f'</params>' \
                       f'</methodCall>'
         url = f'{INIT_URL}'
-        response = self.session.post(url, data=xml_payload.encode('utf-8'))
-        response_bs = bs(response.text, features="html.parser")
-        result_code = int(response_bs.find('error').text)
-        result_msg = response_bs.find('message').text
+        res = self.session.post(url, data=xml_payload.encode('utf-8'))
+        bsobj = bs(res.text, features="html.parser")
+        result_code = int(bsobj.find('error').text)
+        result_msg = bsobj.find('message').text
 
         # Check StatusCode
-        if response.status_code != 200:
-            raise ConnectionError(f'Failed To Delete Comment (Status Code: {response.status_code})')
+        if res.status_code != 200:
+            raise ConnectionError(f'Failed To Delete Comment (Status Code: {res.status_code})')
         # Check ResultCode
         elif result_code != 0:
             raise RuntimeError(f'Failed To Delete Comment (Result Message: {result_msg})')
@@ -106,7 +156,7 @@ class Theqoo:
         # Todo: Save Cache Function
         # Todo: DTO?
 
-        result = []
+        comments = []
 
         # Get Comment Pages
         page_num = 1
@@ -115,36 +165,36 @@ class Theqoo:
             url = f'{INIT_URL}?act=dispSejin7940_commentOwnComment&mid=cate_index&page={page_num}'
 
             # Make Request
-            response = self.session.get(url)
+            res = self.session.get(url)
 
             # Check StatusCode
-            if response.status_code != 200:
-                raise ConnectionError(f'Failed To Get Comments (Status Code: {response.status_code})')
+            if res.status_code != 200:
+                raise ConnectionError(f'Failed To Get Comments (Status Code: {res.status_code})')
 
             # Convert Response To BeautifulSoup
-            response_bs = bs(response.text, features="html.parser")
+            response_bs = bs(res.text, features="html.parser")
 
             # Get Comments From Page
-            comments = response_bs.findAll('td', {'class', 'title'})
+            bs_comments = response_bs.findAll('td', {'class', 'title'})
 
             # When There's No Comments
-            if len(comments) < 1:
+            if len(bs_comments) < 1:
                 break
 
             # Get Comment Srl From Each Comment And Add To List
-            for comment in comments:
-                result.append(comment.findAll('a')[-1]['href'].split('_')[-1])
+            for c in bs_comments:
+                comments.append(c.findAll('a')[-1]['href'].split('_')[-1])
 
             # Increase page_num
             page_num += 1
 
         # Return Comment List
-        return result
+        return comments
 
 
 if __name__ == "__main__":
     tq = Theqoo(ini.THEQOO_ID, ini.THEQOO_PW)
-    tq.login()
+    tq.__do_login()
     result = tq.get_user_comments()
     for comment in result:
         response = tq.delete_comment(comment)
