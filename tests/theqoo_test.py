@@ -35,6 +35,11 @@ class LoginTestCase(unittest.TestCase):
     testId = 'id'
     testPw = 'pw'
 
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.tq = Theqoo(ini.THEQOO_ID, ini.THEQOO_PW)
+        cls.tq.login()
+
     def test_login_ok(self):
         tq = Theqoo(ini.THEQOO_ID, ini.THEQOO_PW)
         tq.login()
@@ -50,33 +55,15 @@ class LoginTestCase(unittest.TestCase):
         with self.assertRaises(ConnectionError) as s:
             tq.login()
 
-
-class DeleteCommentTestCase(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls) -> None:
-        cls.tq = Theqoo(ini.THEQOO_ID, ini.THEQOO_PW)
-        cls.tq.login()
-
     def test_delete_comment_success(self):
         result = self.tq.delete_comment(1580192797)
         self.assertIsInstance(result, str)
 
     def test_delete_comment_fail(self):
-        failer = Theqoo('testid', 'testpw')
+        fail = Theqoo('testid', 'testpw')
         # Not Logged In
         with self.assertRaises(RuntimeError):
-            failer.delete_comment(1580192797)
-
-    @classmethod
-    def tearDownClass(cls) -> None:
-        cls.tq = None
-
-
-class GetUserComments(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls) -> None:
-        cls.tq = Theqoo(ini.THEQOO_ID, ini.THEQOO_PW)
-        cls.tq.login()
+            fail.delete_comment(1580192797)
 
     def test_get_user_comments_success(self):
         result = self.tq.get_user_comments()
