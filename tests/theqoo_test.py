@@ -1,6 +1,6 @@
 import unittest
-from eraser.Theqoo import Theqoo
-from eraser import ini
+from api.theqoo import Theqoo
+import ini
 
 
 class GeneralTestCase(unittest.TestCase):

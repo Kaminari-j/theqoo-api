@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 from bs4 import BeautifulSoup as bs
-from multiprocessing import Process, Queue
 import requests
-from eraser import ini
+import ini
 
 INIT_URL = 'https://theqoo.net/index.php'
 
@@ -146,6 +145,8 @@ class Theqoo:
 if __name__ == "__main__":
     tq = Theqoo(ini.THEQOO_ID, ini.THEQOO_PW)
     tq.login()
-    response = tq.delete_comment(1581141940)
-    print(response)
+    result = tq.get_user_comments()
+    for comment in result:
+        response = tq.delete_comment(comment)
+        print(response)
     pass
