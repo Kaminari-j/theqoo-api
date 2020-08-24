@@ -27,23 +27,23 @@ class Theqoo:
         if session_file_path is None:
             session_file_path = ini.SESSION_FILE_NAME
 
+        # Get Former Session
+        former_session = self.get_former_session(session_file_path)
+        # Check Former Session Alive
+        if former_session is not None:
+            # When Can Be Used
+            self.session = former_session
+            self.__logged_in = True
+
         if no_directly_login:
             pass
-        else:
-            # Get Former Session
-            former_session = self.get_former_session(session_file_path)
-            # Check Former Session Alive
-            if former_session is not None:
-                # When Can Be Used
-                self.session = former_session
-                self.__logged_in = True
-            else:
-                # When Unable To Use Former Session
-                try:
-                    self.do_login(session_file_name=session_file_path)
-                except ConnectionError as e:
-                    util.print_message(message_type=MessageTypes.ERROR,
-                                       message=f'다음과 같은 이유로 로그인에 실패하였습니다. {e.strerror}')
+        elif self.__logged_in is not True:
+            # When Unable To Use Former Session
+            try:
+                self.do_login(session_file_name=session_file_path)
+            except ConnectionError as e:
+                util.print_message(message_type=MessageTypes.ERROR,
+                                   message=f'다음과 같은 이유로 로그인에 실패하였습니다. {e.strerror}')
         # Set Headers To Session
         self.session.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko',

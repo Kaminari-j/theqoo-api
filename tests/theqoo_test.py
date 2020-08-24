@@ -37,13 +37,22 @@ class GeneralTestCase(unittest.TestCase):
 
 
 class LoginTestCase(unittest.TestCase):
+    tq_normal = None
+
     testId = 'id'
     testPw = 'pw'
 
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.tq_normal = Theqoo(ini.THEQOO_ID, ini.THEQOO_PW, FILE_WITH_SESSION, no_directly_login=True)
+
+    def setUp(self) -> None:
+        if not self.tq_normal.is_logged_in():
+            self.tq_normal.do_login(FILE_WITH_SESSION)
+
     def test_login_ok(self):
-        tq = Theqoo(ini.THEQOO_ID, ini.THEQOO_PW, no_directly_login=True)
-        tq.do_login(FILE_WITH_SESSION)
-        self.assertTrue(tq.is_logged_in())
+        self.tq_normal.do_login(FILE_WITH_SESSION)
+        self.assertTrue(self.tq_normal.is_logged_in())
 
     def test_login_failed_with_id(self):
         tq = Theqoo(self.testId, ini.THEQOO_PW, no_directly_login=True)
@@ -56,9 +65,7 @@ class LoginTestCase(unittest.TestCase):
             tq.do_login(FILE_NO_SESSION)
 
     def test_delete_comment_success(self):
-        tq = Theqoo(ini.THEQOO_ID, ini.THEQOO_PW, no_directly_login=True)
-        tq.do_login(FILE_WITH_SESSION)
-        result = tq.delete_comment(1580192797)
+        result = self.tq_normal.delete_comment(1580192797)
         self.assertIsInstance(result, str)
 
     def test_delete_comment_fail(self):
@@ -68,8 +75,7 @@ class LoginTestCase(unittest.TestCase):
             fail.delete_comment(1580192797)
 
     def test_get_user_comments_success(self):
-        tq = Theqoo(ini.THEQOO_ID, ini.THEQOO_PW, no_directly_login=True)
-        result = tq.get_user_comments()
+        result = self.tq_normal.get_user_comments()
         self.assertIsInstance(result, list)
         self.assertGreater(len(result), 0)
         for comment in result:
