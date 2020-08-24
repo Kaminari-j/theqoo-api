@@ -77,5 +77,10 @@ class LoginTestCase(unittest.TestCase):
         cls.tq = None
 
 
+class SessionTestCase(unittest.TestCase):
+    def test_check_session(self):
+
+
+
 if __name__ == '__main__':
     unittest.main()
