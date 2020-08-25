@@ -77,19 +77,17 @@ class Theqoo:
     @staticmethod
     def get_former_session(session_file_name: str):
         # Get Session From File
-        s = util.load_session(session_file_name)
-        # When Got No Session
-        if s is None:
-            return None
-        # Check Session With Make A Test Request To Open My Page
-        url = f'{INIT_URL}?act=dispMemberInfo'
-        # Make Request
-        res = s.get(url)
-        find_result = len(bs(res.text, features="html.parser").findAll('div', {'class', 'login-header'}))
-        # When Logged On Successfully, Length Of find_result Should Be 0
-        if find_result != 0:
-            return None
-        else:
+        with util.load_session(session_file_name) as s:
+            # When Got No Session
+            if s is None:
+                return None
+            # Check Session With Make A Test Request To Open 'My Page'
+            res = s.get(f'{INIT_URL}?act=dispMemberInfo')
+            find_result = len(bs(res.text, features="html.parser").findAll('div', {'class', 'login-header'}))
+            # When Logged On Successfully, Length Of find_result Should Be 0
+            if find_result != 0:
+                return None
+            # Return Session Object
             return s
 
     def do_login(self, session_file_name: str):

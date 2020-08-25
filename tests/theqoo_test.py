@@ -1,4 +1,5 @@
 import unittest
+import os
 from pathlib import Path
 from api.theqoo import Theqoo
 import requests
@@ -88,16 +89,18 @@ class LoginTestCase(unittest.TestCase):
 
 class SessionTestCase(unittest.TestCase):
     def test_get_former_session_got_session(self):
-        Theqoo(ini.THEQOO_ID, ini.THEQOO_PW, FILE_WITH_SESSION)
+        if not os.path.exists(FILE_WITH_SESSION):
+            Theqoo(ini.THEQOO_ID, ini.THEQOO_PW, FILE_WITH_SESSION)
         res = Theqoo.get_former_session(FILE_WITH_SESSION)
         self.assertIsNotNone(res)
         self.assertIsInstance(res, requests.Session)
 
     def test_get_former_session_no_session(self):
-        try:
-            Theqoo('nouser', 'nouser', FILE_NO_SESSION)
-        except ConnectionError:
-            pass
+        if not os.path.exists(FILE_NO_SESSION):
+            try:
+                Theqoo('nouser', 'nouser', FILE_NO_SESSION)
+            except ConnectionError:
+                pass
         res = Theqoo.get_former_session(FILE_NO_SESSION)
         self.assertIsNone(res)
 
