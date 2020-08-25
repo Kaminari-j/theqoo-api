@@ -87,20 +87,28 @@ class LoginTestCase(unittest.TestCase):
             self.assertRegex(comment, '[0-9]+')
 
 
-class SessionTestCase(unittest.TestCase):
-    def test_get_former_session_got_session(self):
+class SessionTestCase_Got_Session(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
         if not os.path.exists(FILE_WITH_SESSION):
             Theqoo(ini.THEQOO_ID, ini.THEQOO_PW, FILE_WITH_SESSION)
+
+    def test_get_former_session_got_session(self):
         res = Theqoo.get_former_session(FILE_WITH_SESSION)
         self.assertIsNotNone(res)
         self.assertIsInstance(res, requests.Session)
 
-    def test_get_former_session_no_session(self):
+
+class SessionTestCase_No_Session(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
         if not os.path.exists(FILE_NO_SESSION):
             try:
                 Theqoo('nouser', 'nouser', FILE_NO_SESSION)
             except ConnectionError:
                 pass
+
+    def test_get_former_session_no_session(self):
         res = Theqoo.get_former_session(FILE_NO_SESSION)
         self.assertIsNone(res)
 

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import os
 from bs4 import BeautifulSoup as bs
 import requests
 import ini
@@ -76,6 +77,9 @@ class Theqoo:
 
     @staticmethod
     def get_former_session(session_file_name: str):
+        # Check If File Exists
+        if not os.path.exists(session_file_name):
+            return None
         # Get Session From File
         with util.load_session(session_file_name) as s:
             # When Got No Session
