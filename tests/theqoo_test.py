@@ -1,9 +1,12 @@
 import unittest
+from pathlib import Path
 from api.theqoo import Theqoo
 import requests
 import ini
 
 TEST_FILE_DIR = './file'
+path = Path(TEST_FILE_DIR)
+path.mkdir(parents=True, exist_ok=True)
 FILE_WITH_SESSION = f'{TEST_FILE_DIR}/with_session'
 FILE_NO_SESSION = f'{TEST_FILE_DIR}/no_session'
 
@@ -45,6 +48,7 @@ class LoginTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.tq_normal = Theqoo(ini.THEQOO_ID, ini.THEQOO_PW, FILE_WITH_SESSION, no_directly_login=True)
+        print(f'Login Status : {"Logged In" if cls.tq_normal.is_logged_in() else "Not Logged In"}')
 
     def setUp(self) -> None:
         if not self.tq_normal.is_logged_in():
@@ -83,25 +87,17 @@ class LoginTestCase(unittest.TestCase):
 
 
 class SessionTestCase(unittest.TestCase):
-    tq = None
-
-    @classmethod
-    def setUpClass(cls) -> None:
-        import os
-        if not os.path.exists(FILE_WITH_SESSION):
-            cls.tq = Theqoo(ini.THEQOO_ID, ini.THEQOO_PW, FILE_WITH_SESSION)
-        if not os.path.exists(FILE_NO_SESSION):
-            try:
-                cls.tq = Theqoo('nouser', 'nouser', FILE_NO_SESSION)
-            except ConnectionError:
-                pass
-
     def test_get_former_session_got_session(self):
+        Theqoo(ini.THEQOO_ID, ini.THEQOO_PW, FILE_WITH_SESSION)
         res = Theqoo.get_former_session(FILE_WITH_SESSION)
         self.assertIsNotNone(res)
         self.assertIsInstance(res, requests.Session)
 
     def test_get_former_session_no_session(self):
+        try:
+            Theqoo('nouser', 'nouser', FILE_NO_SESSION)
+        except ConnectionError:
+            pass
         res = Theqoo.get_former_session(FILE_NO_SESSION)
         self.assertIsNone(res)
 
