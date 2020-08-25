@@ -14,7 +14,7 @@ class Theqoo:
     # Flags
     __logged_in = False
     # Etc
-    __session_file_path = ''
+    __session_file_path = None
 
     def __init__(self, user_id, user_pw, session_file_path: str = None, no_directly_login: bool = False):
         # Set Properties
@@ -22,9 +22,11 @@ class Theqoo:
         self.__set_theqoo_pw(user_pw)
         # When Parameter Not Passed
         if session_file_path is None:
-            session_file_path = ini.SESSION_FILE_NAME
+            self.__session_file_path = ini.SESSION_FILE_NAME
+        else:
+            self.__session_file_path = session_file_path
         # Get Former Session
-        former_session = theqoo_api.get_former_session(session_file_path)
+        former_session = theqoo_api.get_former_session(self.__session_file_path)
         # Check Former Session Alive
         if former_session is not None:
             # When Can Be Used

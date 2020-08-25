@@ -1,4 +1,5 @@
 import unittest
+import os
 from pathlib import Path
 import requests
 import ini
@@ -15,6 +16,10 @@ path.mkdir(parents=True, exist_ok=True)
 class LoginTestCase(unittest.TestCase):
     testId = 'id'
     testPw = 'pw'
+
+    def tearDown(self) -> None:
+        if os.path.exists(test_setting.FILE_GARBAGE):
+            os.remove(test_setting.FILE_GARBAGE)
 
     def test_login_ok(self):
         with requests.session() as s:
