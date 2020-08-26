@@ -38,7 +38,7 @@ class DeleteCommentTestCase_Instrumented(unittest.TestCase):
               '<message>댓글이 삭제되었습니다. </message>' \
               '<message_type></message_type>' \
               '</response>'
-        responses.add(responses.POST, api.INIT_URL, json=res, status=200)
+        responses.add(responses.POST, api.INIT_URL, body=res, status=200)
         with requests.session() as s:
             self.delete_comment_success(s, 1580192797)
 
@@ -64,7 +64,7 @@ class DeleteCommentTestCase_Instrumented(unittest.TestCase):
                   f'<message>잘못된 요청입니다.</message>' \
                   f'<message_type></message_type>' \
                   f'</response>'
-        responses.add(responses.POST, api.INIT_URL, json=result_xml, status=200)
+        responses.add(responses.POST, api.INIT_URL, body=result_xml, status=200)
         # Not Logged In
         with requests.session() as s:
             self.delete_comment_fail_with_runtime_error(s, 1580192797)
