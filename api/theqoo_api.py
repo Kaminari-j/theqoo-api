@@ -48,6 +48,7 @@ def do_login(session: requests.Session, login_id: str, login_pw: str, session_fi
         'password': login_pw,
         'keep_signed': 'N'
     }
+    # Todo: Encrypt
 
     login_res = session.post(url, data=data)
     response_bs = bs(login_res.text, features="html.parser")
@@ -61,7 +62,7 @@ def do_login(session: requests.Session, login_id: str, login_pw: str, session_fi
         raise ConnectionError(f'Failed To Login (Status Code: {login_res.status_code})')
     # Check Login Error
     elif login_error is not None:
-        raise ConnectionError(login_error.text)
+        raise AttributeError(login_error.text)
     # Login Success
     else:
         util.print_message(message_type=MessageTypes.SYSTEM,
