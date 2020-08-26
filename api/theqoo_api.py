@@ -82,15 +82,15 @@ def delete_comment(session: requests.Session, comment_srl):
                   f'</methodCall>'
     url = f'{INIT_URL}'
     res = session.post(url, data=xml_payload.encode('utf-8'))
+    # Check StatusCode
+    if res.status_code != 200:
+        raise ConnectionError(f'Failed To Delete Comment (Status Code: {res.status_code})')
     bsobj = bs(res.text, features="html.parser")
     result_code = int(bsobj.find('error').text)
     result_msg = bsobj.find('message').text
 
-    # Check StatusCode
-    if res.status_code != 200:
-        raise ConnectionError(f'Failed To Delete Comment (Status Code: {res.status_code})')
     # Check ResultCode
-    elif result_code != 0:
+    if result_code != 0:
         raise RuntimeError(f'Failed To Delete Comment (Result Message: {result_msg})')
     else:
         return f'Comment: {comment_srl} Result: {result_msg}'
