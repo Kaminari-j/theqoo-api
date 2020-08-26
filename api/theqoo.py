@@ -42,7 +42,7 @@ class Theqoo:
                     session=self.session,
                     login_id=self.__theqoo_id,
                     login_pw=self.__theqoo_pw,
-                    session_file_name=session_file_path)
+                    session_file_name=self.__session_file_path)
             except ConnectionError as e:
                 util.print_message(message_type=MessageTypes.ERROR,
                                    message=f'다음과 같은 이유로 로그인에 실패하였습니다. {e.strerror}')
