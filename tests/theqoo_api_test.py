@@ -1,19 +1,92 @@
-import unittest
-from unittest.mock import MagicMock
 import os
+import unittest
 from pathlib import Path
-from varname import nameof
+
 import requests
+import responses
+from varname import nameof
+
 import ini
 from api import theqoo_api as api
 from tests import test_setting
-import responses
 
 path = Path(test_setting.TEST_FILE_DIR)
 path.mkdir(parents=True, exist_ok=True)
 
 # Set True when do you want to 'real' test
-TEST_INSTRUMENTED = True
+# CAUTION !!
+# Don't Execute instrumented LoginTestCase Too Often In A Short Time (About 2~3 Times),
+# It May Causes Blocking Your IP From Theqoo About 5 Minutes
+TEST_INSTRUMENTED = False
+
+
+class LoginTestCase_Instrumented(unittest.TestCase):
+    url = f'{api.INIT_URL}?mid={api.INDEX_PAGE_ID}&act={api.Actions.LOGIN_FORM}'
+    testId = 'id'
+    testPw = 'pw'
+
+    def tearDown(self) -> None:
+        if os.path.exists(test_setting.FILE_GARBAGE):
+            os.remove(test_setting.FILE_GARBAGE)
+
+    def do_login_test(self, login_id: str, login_pw: str, session: requests.Session):
+        res = api.do_login(session=session,
+                           login_id=login_id, login_pw=login_pw,
+                           session_file_name=test_setting.FILE_GARBAGE)
+        self.assertTrue(res, 'Return value should be True when login success')
+
+    def do_login_test_attribute_error(self, login_id: str, login_pw: str, session: requests.Session):
+        with self.assertRaises(AttributeError):
+            api.do_login(session=session,
+                         login_id=login_id, login_pw=login_pw,
+                         session_file_name=test_setting.FILE_GARBAGE)
+
+    def do_login_test_connection_error(self, login_id: str, login_pw: str, session: requests.Session):
+        with self.assertRaises(ConnectionError):
+            api.do_login(session=session,
+                         login_id=login_id, login_pw=login_pw,
+                         session_file_name=test_setting.FILE_GARBAGE)
+
+    @unittest.skipUnless(TEST_INSTRUMENTED, f'Test only when {nameof(TEST_INSTRUMENTED)} is True')
+    def test_login_ok_instrumented(self):
+        with requests.session() as s:
+            self.do_login_test(session=s, login_id=ini.THEQOO_ID, login_pw=ini.THEQOO_PW)
+
+    @responses.activate
+    def test_login_ok(self):
+        responses.add(responses.POST, url=self.url, status=200)
+        with requests.session() as s:
+            self.do_login_test(session=s, login_id=ini.THEQOO_ID, login_pw=ini.THEQOO_PW)
+
+    @responses.activate
+    def test_login_failed_with_connection_error(self):
+        responses.add(responses.POST, url=self.url, status=404)
+        with requests.session() as s:
+            self.do_login_test_connection_error(session=s, login_id=ini.THEQOO_ID, login_pw=self.testPw)
+
+    @unittest.skipUnless(TEST_INSTRUMENTED, f'Test only when {nameof(TEST_INSTRUMENTED)} is True')
+    def test_login_failed_with_id_instrumented(self):
+        with requests.session() as s:
+            self.do_login_test_attribute_error(session=s, login_id=self.testId, login_pw=ini.THEQOO_PW)
+
+    @responses.activate
+    def test_login_failed_with_id(self):
+        res = r'<div class="message error"><p>존재하지 않는 회원 아이디입니다.</p></div>'
+        responses.add(responses.POST, url=self.url, body=res, status=200)
+        with requests.session() as s:
+            self.do_login_test_attribute_error(session=s, login_id=self.testId, login_pw=ini.THEQOO_PW)
+
+    @unittest.skipUnless(TEST_INSTRUMENTED, f'Test only when {nameof(TEST_INSTRUMENTED)} is True')
+    def test_login_failed_with_pw_instrumented(self):
+        with requests.session() as s:
+            self.do_login_test_attribute_error(session=s, login_id=ini.THEQOO_ID, login_pw=self.testPw)
+
+    @responses.activate
+    def test_login_failed_with_pw(self):
+        res = r'<div class="message error"><p>잘못된 비밀번호입니다.</p></div>'
+        responses.add(responses.POST, url=self.url, body=res, status=200)
+        with requests.session() as s:
+            self.do_login_test_attribute_error(session=s, login_id=ini.THEQOO_ID, login_pw=self.testPw)
 
 
 class DeleteCommentTestCase_Instrumented(unittest.TestCase):
