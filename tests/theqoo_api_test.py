@@ -17,7 +17,7 @@ path.mkdir(parents=True, exist_ok=True)
 # CAUTION !!
 # Don't Execute instrumented LoginTestCase Too Often In A Short Time (About 2~3 Times),
 # It May Causes Blocking Your IP From Theqoo About 5 Minutes
-TEST_INSTRUMENTED = True
+TEST_INSTRUMENTED = False
 
 
 class LoginTestCase_Instrumented(unittest.TestCase):
