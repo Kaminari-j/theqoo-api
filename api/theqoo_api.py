@@ -84,33 +84,6 @@ def do_login(session: requests.Session, login_id: str, login_pw: str, session_fi
         return True
 
 
-def delete_comment(session: requests.Session, comment_srl):
-    xml_payload = f'<?xml version="1.0" encoding="utf-8" ?>' \
-                  f'<methodCall>' \
-                  f'<params>' \
-                  f'<target_srl><![CDATA[{comment_srl}]]></target_srl>' \
-                  f'<cur_mid><![CDATA[{INDEX_PAGE_ID}]]></cur_mid>' \
-                  f'<mid><![CDATA[{INDEX_PAGE_ID}]]></mid>' \
-                  f'<module><![CDATA[{Actions.MOD_COMMENT}]]></module>' \
-                  f'<act><![CDATA[{Actions.PROC_DELETE_COMMENT}]]></act>' \
-                  f'</params>' \
-                  f'</methodCall>'
-    url = f'{INIT_URL}'
-    res = session.post(url, data=xml_payload.encode('utf-8'))
-    # Check StatusCode
-    if res.status_code != 200:
-        raise ConnectionError(f'Failed To Delete Comment (Status Code: {res.status_code})')
-    bsobj = bs(res.text, features="html.parser")
-    result_code = int(bsobj.find('error').text)
-    result_msg = bsobj.find('message').text
-
-    # Check ResultCode
-    if result_code != 0:
-        raise RuntimeError(f'Failed To Delete Comment (Result Message: {result_msg})')
-    else:
-        return f'Comment: {comment_srl} Result: {result_msg}'
-
-
 def get_user_comments(session: requests.Session):
     # Todo: Save Cache Function
     # Todo: DTO?
@@ -200,12 +173,24 @@ def get_user_documents(session: requests.Session):
     return documents
 
 
-def is_logged_in(response: requests.Response) -> bool:
-    login_error = bs(response.text, features="html.parser").find('div', {'class', 'login-header'})
-    if login_error is None:
-        return True
-    else:
-        return False
+def delete_comment(session: requests.Session, comment_srl):
+    xml_payload = f'<?xml version="1.0" encoding="utf-8" ?>' \
+                  f'<methodCall>' \
+                  f'<params>' \
+                  f'<target_srl><![CDATA[{comment_srl}]]></target_srl>' \
+                  f'<cur_mid><![CDATA[{INDEX_PAGE_ID}]]></cur_mid>' \
+                  f'<mid><![CDATA[{INDEX_PAGE_ID}]]></mid>' \
+                  f'<module><![CDATA[{Actions.MOD_COMMENT}]]></module>' \
+                  f'<act><![CDATA[{Actions.PROC_DELETE_COMMENT}]]></act>' \
+                  f'</params>' \
+                  f'</methodCall>'
+    try:
+        result_msg = post_xml(session, xml_payload)
+        return f'Comment: {comment_srl} Result: {result_msg}'
+    except ConnectionError as e:
+        raise ConnectionError(f'Failed To Delete Comment (Status Code: {e})')
+    except RuntimeError as e:
+        raise RuntimeError(f'Failed To Delete Comment (Result Message: {e})')
 
 
 def delete_document(session: requests.Session, document_srl):
@@ -217,19 +202,35 @@ def delete_document(session: requests.Session, document_srl):
                   f'<act><![CDATA[{Actions.PROC_DELETE_DOCUMENT}]]></act>' \
                   f'</params>' \
                   f'</methodCall>'
-    url = f'{INIT_URL}'
-    res = session.post(url, data=xml_payload.encode('utf-8'))
+    try:
+        result_msg = post_xml(session, xml_payload)
+        return f'Comment: {document_srl} Result: {result_msg}'
+    except ConnectionError as e:
+        raise ConnectionError(f'Failed To Delete Document (Status Code: {e})')
+    except RuntimeError as e:
+        raise RuntimeError(f'Failed To Delete Document (Result Message: {e})')
+
+
+def post_xml(session: requests.Session, xml: str):
+    res = session.post(INIT_URL, data=xml.encode('utf-8'))
     # Check StatusCode
     if res.status_code != 200:
-        raise ConnectionError(f'Failed To Delete Document (Status Code: {res.status_code})')
+        raise ConnectionError(res.status_code)
     bsobj = bs(res.text, features="html.parser")
     result_code = int(bsobj.find('error').text)
     result_msg = bsobj.find('message').text
-
     # Check ResultCode
     if result_code != 0:
-        raise RuntimeError(f'Failed To Delete Document (Result Message: {result_msg})')
+        raise RuntimeError(result_msg)
     else:
-        return f'Comment: {document_srl} Result: {result_msg}'
+        return result_msg
+
+
+def is_logged_in(response: requests.Response) -> bool:
+    login_error = bs(response.text, features="html.parser").find('div', {'class', 'login-header'})
+    if login_error is None:
+        return True
+    else:
+        return False
 
 
