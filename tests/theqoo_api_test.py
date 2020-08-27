@@ -17,7 +17,7 @@ path.mkdir(parents=True, exist_ok=True)
 # CAUTION !!
 # Don't Execute instrumented LoginTestCase Too Often In A Short Time (About 2~3 Times),
 # It May Causes Blocking Your IP From Theqoo About 5 Minutes
-TEST_INSTRUMENTED = False
+TEST_INSTRUMENTED = True
 
 
 class LoginTestCase_Instrumented(unittest.TestCase):
@@ -184,6 +184,17 @@ class GetUserCommentsTestCase(unittest.TestCase):
             with self.assertRaises(ConnectionError):
                 api.get_user_comments(s)
 
+    @responses.activate
+    def test_when_not_logged_in(self):
+        url = f'{api.INIT_URL}?act={api.Actions.OWN_COMMENTS}&mid={api.INDEX_PAGE_ID}&page=1'
+        body = '<div class="login-header">' \
+               '<h1><i class="icon-user"></i> 로그인을 하지 않았습니다.</h1>' \
+               '</div>'
+        responses.add(responses.GET, url=url, body=body, status=200)
+        with requests.session() as s:
+            with self.assertRaises(AttributeError):
+                api.get_user_comments(s)
+
 
 class GetFormerSessionTestCase_With_Session(unittest.TestCase):
     @classmethod
@@ -218,6 +229,110 @@ class GetFormerSessionTestCase_With_No_Session(unittest.TestCase):
     def test_get_former_session_no_session(self):
         res = api.get_former_session(session_file_name=test_setting.FILE_NO_SESSION)
         self.assertIsNone(res)
+
+
+class GetUserDocumentsTestCase(unittest.TestCase):
+    url = f'{api.INIT_URL}?act={api.Actions.OWN_DOCUMENTS}&mid={api.INDEX_PAGE_ID}&page=1'
+
+    def test_get_user_documents_ok(self):
+        with api.get_former_session(test_setting.FILE_WITH_SESSION) as s:
+            res = api.get_user_documents(s)
+            self.assertIsInstance(res, list)
+            self.assertGreater(len(res), 0)
+            for doc in res:
+                self.assertIsInstance(doc, api.Document)
+                self.assertTrue(doc.category_nm is not None, doc.category_nm)
+                self.assertTrue(doc.title is not None, doc.title)
+                self.assertTrue(doc.srl is not None, doc.srl)
+
+    @responses.activate
+    def test_get_user_documents_connection_error(self):
+        responses.add(responses.GET, url=self.url, status=404)
+        with requests.session() as s:
+            with self.assertRaises(ConnectionError):
+                api.get_user_documents(s)
+
+    @responses.activate
+    def test_when_not_logged_in(self):
+        body = '<div class="login-header">' \
+               '<h1><i class="icon-user"></i> 로그인을 하지 않았습니다.</h1>' \
+               '</div>'
+        responses.add(responses.GET, url=self.url, body=body, status=200)
+        with requests.session() as s:
+            with self.assertRaises(AttributeError):
+                api.get_user_documents(s)
+
+
+class DeleteDocumentTestCase_Instrumented(unittest.TestCase):
+    document_srl = '1582525827'
+
+    def delete_document_success(self, session: requests.Session, comment_srl):
+        result = api.delete_document(session, comment_srl)
+        self.assertIsInstance(result, str)
+
+    def delete_document_fail_with_runtime_error(self, session: requests.Session, comment_srl):
+        with self.assertRaises(RuntimeError):
+            api.delete_document(session, comment_srl)
+
+    @unittest.skipUnless(TEST_INSTRUMENTED, f'Test only when {nameof(TEST_INSTRUMENTED)} is True')
+    def test_delete_document_success_instrumented(self):
+        with api.get_former_session(session_file_name=test_setting.FILE_WITH_SESSION) as s:
+            self.delete_document_success(s, self.document_srl)
+
+    @responses.activate
+    def test_delete_document_success(self):
+        res = '﻿<?xml version="1.0" encoding="UTF-8"?>' \
+              '<response>' \
+              '<error>0</error>' \
+              '<message>success</message>' \
+              '</response>'
+        responses.add(responses.POST, api.INIT_URL, body=res, status=200)
+        with requests.session() as s:
+            self.delete_document_success(s, self.document_srl)
+
+    @responses.activate
+    def test_delete_document_fail_with_connection_error(self):
+        # Not Logged In
+        responses.add(responses.POST, api.INIT_URL, status=404)
+        with requests.session() as s:
+            with self.assertRaises(ConnectionError):
+                api.delete_document(s, self.document_srl)
+
+    @unittest.skipUnless(TEST_INSTRUMENTED, f'Test only when {nameof(TEST_INSTRUMENTED)} is True')
+    def test_delete_document_fail_with_runtime_error_instrumented(self):
+        # Error never occurs on document deletion
+        assert True
+
+    @responses.activate
+    def test_delete_document_fail_with_runtime_error(self):
+        result_xml = '﻿<?xml version="1.0" encoding="UTF-8"?>' \
+                     '<response>' \
+                     '<error>1</error>' \
+                     '<message>fail</message>' \
+                     '</response>'
+        responses.add(responses.POST, api.INIT_URL, body=result_xml, status=200)
+        # Not Logged In
+        with requests.session() as s:
+            self.delete_document_fail_with_runtime_error(s, 'asdfadsf')
+
+
+class TestIsLoggedIn(unittest.TestCase):
+    target_url = f'{api.INIT_URL}?{api.Actions.MY_PAGE}'
+
+    @responses.activate
+    def test_when_logged_in(self):
+        responses.add(responses.GET, url=self.target_url, body='', status=200)
+        with requests.session().get(url=self.target_url) as res:
+            assert api.is_logged_in(res) is True
+
+    @responses.activate
+    def test_when_not_logged_in(self):
+        body = '<div class="login-header">' \
+               '<h1><i class="icon-user"></i> 로그인을 하지 않았습니다.</h1>' \
+               '</div>'
+        responses.add(responses.GET, url=self.target_url, body=body, status=200)
+        with requests.session().get(url=self.target_url) as res:
+            assert api.is_logged_in(res) is False
 
 
 if __name__ == '__main__':

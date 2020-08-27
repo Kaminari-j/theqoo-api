@@ -16,6 +16,20 @@ class Actions:
     MOD_COMMENT = 'sejin7940_comment'
     PROC_DELETE_COMMENT = 'procSejin7940_commentDeleteComment'
     PROC_LOGIN = 'procMemberLogin'
+    OWN_DOCUMENTS = 'dispMemberOwnDocument'
+    PROC_DELETE_DOCUMENT = 'procMemberDeleteMyDocuments'
+    MOD_MEMBER = 'member'
+
+
+class Document:
+    category_nm = None
+    title = None
+    srl = None
+
+    def __init__(self, category_nm: str, title: str, srl: str):
+        self.category_nm = category_nm
+        self.title = title
+        self.srl = srl
 
 
 def get_former_session(session_file_name: str):
@@ -112,6 +126,10 @@ def get_user_comments(session: requests.Session):
         # Make Request
         res = session.get(url)
 
+        # Check Login Status
+        if is_logged_in(res) is not True:
+            raise AttributeError(f'Failed To Get Documents: Not Logged In')
+
         # Check StatusCode
         if res.status_code != 200:
             raise ConnectionError(f'Failed To Get Comments (Status Code: {res.status_code})')
@@ -135,3 +153,83 @@ def get_user_comments(session: requests.Session):
 
     # Return Comment List
     return comments
+
+
+def get_user_documents(session: requests.Session):
+    documents = []
+    # Get Comment Pages
+    page_num = 1
+    while True:
+        # Make Url
+        url = f'{INIT_URL}?act={Actions.OWN_DOCUMENTS}&mid={INDEX_PAGE_ID}&page={page_num}'
+
+        # Make Request
+        res = session.get(url)
+
+        # Check Login Status
+        if is_logged_in(res) is not True:
+            raise AttributeError(f'Failed To Get Documents: Not Logged In')
+
+        # Check StatusCode
+        if res.status_code != 200:
+            raise ConnectionError(f'Failed To Get Documents (Status Code: {res.status_code})')
+
+        # Convert Response To BeautifulSoup
+        bsobj = bs(res.text, features="html.parser")
+
+        # Get Documents From Page
+        bs_documents = bsobj.findAll(
+            'table', {'class', 'table table-striped table-hover member_info_table'}
+        )
+
+        # Get Table Rows
+        doc_rows = bs_documents[-1]('tr')
+
+        # Break Loop When There's No Documents
+        if len(doc_rows) < 1:
+            break
+
+        # Get Comment Srl From Each Comment And Add To List
+        for doc in doc_rows:
+            documents.append(Document(category_nm=doc('a')[0].text,
+                                      title=doc('a')[1].text,
+                                      srl=doc('a')[1]['href'].split('/')[-1]))
+        # Increase page_num
+        page_num += 1
+    # return list
+    return documents
+
+
+def is_logged_in(response: requests.Response) -> bool:
+    login_error = bs(response.text, features="html.parser").find('div', {'class', 'login-header'})
+    if login_error is None:
+        return True
+    else:
+        return False
+
+
+def delete_document(session: requests.Session, document_srl):
+    xml_payload = f'<?xml version="1.0" encoding="utf-8" ?>' \
+                  f'<methodCall>' \
+                  f'<params>' \
+                  f'<document_srls><![CDATA[{document_srl}]]></document_srls>' \
+                  f'<module><![CDATA[{Actions.MOD_MEMBER}]]></module>' \
+                  f'<act><![CDATA[{Actions.PROC_DELETE_DOCUMENT}]]></act>' \
+                  f'</params>' \
+                  f'</methodCall>'
+    url = f'{INIT_URL}'
+    res = session.post(url, data=xml_payload.encode('utf-8'))
+    # Check StatusCode
+    if res.status_code != 200:
+        raise ConnectionError(f'Failed To Delete Document (Status Code: {res.status_code})')
+    bsobj = bs(res.text, features="html.parser")
+    result_code = int(bsobj.find('error').text)
+    result_msg = bsobj.find('message').text
+
+    # Check ResultCode
+    if result_code != 0:
+        raise RuntimeError(f'Failed To Delete Document (Result Message: {result_msg})')
+    else:
+        return f'Comment: {document_srl} Result: {result_msg}'
+
+
