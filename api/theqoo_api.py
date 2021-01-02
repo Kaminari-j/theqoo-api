@@ -76,12 +76,16 @@ def do_login(session: requests.Session, login_id: str, login_pw: str, session_fi
         raise ConnectionError(f'Failed To Login (Status Code: {login_res.status_code})')
     # Check Login Error
     elif login_error is not None:
-        raise AttributeError(login_error.text)
+        if (login_error.text.strip() == '활동이 제한되어서 글, 댓글 작성이 금지된 계정입니다. 사유 : 공지위반'):
+            util.print_message(message_type=MessageTypes.SYSTEM,
+                               message='SYSTEM: 글, 댓글 작성이 금지된 계정')
+        else:
+            raise AttributeError(login_error.text)
+
     # Login Success
-    else:
-        util.print_message(message_type=MessageTypes.SYSTEM,
-                           message='정상적으로 로그인 되었습니다.')
-        return True
+    util.print_message(message_type=MessageTypes.SYSTEM,
+                       message='정상적으로 로그인 되었습니다.')
+    return True
 
 
 def get_user_comments(session: requests.Session):
