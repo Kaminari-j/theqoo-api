@@ -37,7 +37,7 @@ class GeneralTestCase(unittest.TestCase):
     @responses.activate
     def test_initialize_with_session_file(self):
         responses.add(responses.POST, url=self.login_url, status=200)
-        tq = Theqoo(self.testId, self.testPw, session_file_path=test_setting.FILE_GARBAGE)
+        tq = Theqoo(self.testId, self.testPw, session_file_name=test_setting.FILE_GARBAGE)
         self.assertEqual(self.testId, tq.get_theqoo_id(), 'Login ID should be set after init')
         self.assertEqual(self.testPw, tq.get_theqoo_pw(), 'Login PW should be set after init')
         self.assertIsNotNone(tq.get_session_file_path())

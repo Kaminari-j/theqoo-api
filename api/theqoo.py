@@ -16,15 +16,15 @@ class Theqoo:
     # Etc
     __session_file_path = None
 
-    def __init__(self, user_id, user_pw, session_file_path: str = None, no_directly_login: bool = False):
+    def __init__(self, user_id, user_pw, session_file_name: str = None, no_directly_login: bool = False):
         # Set Properties
         self.__set_theqoo_id(user_id)
         self.__set_theqoo_pw(user_pw)
         # When Parameter Not Passed
-        if session_file_path is None:
+        if session_file_name is None:
             self.__session_file_path = ini.SESSION_FILE_NAME
         else:
-            self.__session_file_path = session_file_path
+            self.__session_file_path = session_file_name
         # Get Former Session
         former_session = theqoo_api.get_former_session(self.__session_file_path)
         # Check Former Session Alive
