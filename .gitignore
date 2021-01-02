@@ -126,3 +126,6 @@ dmypy.json
 .idea/
 .idea/workspace.xml
 .DS_Store
+tests/file/
+tests/api/file/
+/files/*
