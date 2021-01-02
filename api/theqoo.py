@@ -79,6 +79,28 @@ class Theqoo:
     def get_session_file_path(self):
         return self.__session_file_path
 
+    def do_delete_document(self, document_id: str):
+        # Todo: Test
+        response = theqoo_api.delete_document(self.session, document_id)
+        util.print_message(message_type=MessageTypes.SYSTEM, message=f'{response}')
+
+    def do_delete_all_documents(self, document_id: str):
+        # Todo: Test And User Input
+        raise NotImplementedError
+        # response = theqoo_api.delete_document(self.session, document_id)
+        # util.print_message(message_type=MessageTypes.SYSTEM, message=f'{response}')
+
+    def do_delete_comment(self, document_id: str):
+        # Todo: Test
+        response = theqoo_api.delete_comment(self.session, document_id)
+        util.print_message(message_type=MessageTypes.SYSTEM, message=f'{response}')
+
+    def do_delete_all_comment(self, document_id: str):
+        # Todo: Test And User Input
+        raise NotImplementedError
+        # response = theqoo_api.delete_document(self.session, document_id)
+        # util.print_message(message_type=MessageTypes.SYSTEM, message=f'{response}')
+
 
 if __name__ == "__main__":
     # tq = Theqoo(ini.THEQOO_ID, ini.THEQOO_PW)
