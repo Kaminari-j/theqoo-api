@@ -78,7 +78,7 @@ def do_login(session: requests.Session, login_id: str, login_pw: str, session_fi
     elif login_error is not None:
         if (login_error.text.strip() == '활동이 제한되어서 글, 댓글 작성이 금지된 계정입니다. 사유 : 공지위반'):
             util.print_message(message_type=MessageTypes.SYSTEM,
-                               message='SYSTEM: 글, 댓글 작성이 금지된 계정')
+                               message='글, 댓글 작성이 금지된 계정')
         else:
             raise AttributeError(login_error.text)
 
