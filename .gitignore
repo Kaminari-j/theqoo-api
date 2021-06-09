@@ -129,3 +129,5 @@ dmypy.json
 tests/file/
 tests/api/file/
 /files/*
+tests/tests/file/no_session
+tests/tests/file/with_session

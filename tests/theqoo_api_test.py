@@ -220,6 +220,8 @@ class GetFormerSessionTestCase_With_No_Session(unittest.TestCase):
                                  session_file_name=test_setting.FILE_NO_SESSION)
             except ConnectionError:
                 pass
+            except AttributeError:
+                pass
 
     def test_get_former_session_no_session_file(self):
         # When There's No File
