@@ -1,0 +1,13 @@
+asttokens==2.0.5
+beautifulsoup4==4.9.3
+certifi==2021.5.30
+chardet==4.0.0
+executing==0.6.0
+idna==2.10
+pure-eval==0.2.1
+requests==2.25.1
+responses==0.13.3
+six==1.16.0
+soupsieve==2.2.1
+urllib3==1.26.5
+varname==0.6.4
